@@ -1,0 +1,109 @@
+cabal-version:      3.0
+name:               jambhala
+version:            0.1.0.0
+
+-- A short (one-line) description of the package.
+-- synopsis:
+
+-- A longer description of the package.
+-- description:
+
+license:            MIT
+license-file:       LICENSE
+author:             Ian Burzynski
+maintainer:         23251244+iburzynski@users.noreply.github.com
+
+flag defer-plugin-errors
+  description:
+      Defer errors from the plugin, useful for things like Haddock that can't handle it.
+  default: False
+  manual: True
+
+common common
+  default-language: Haskell2010
+  build-depends:
+      base ^>=4.14.3.0
+  ghc-options:
+    -Wall -fobject-code -fno-ignore-interface-pragmas
+    -fno-omit-interface-pragmas -fno-strictness -fno-spec-constr
+    -fno-specialise
+  if flag(defer-plugin-errors)
+    ghc-options: -fplugin-opt PlutusTx.Plugin:defer-errors
+
+library
+  import: common
+  exposed-modules:
+    Contracts
+    Jambhala.CLI
+    Jambhala.Haskell
+    Jambhala.Plutus
+    Jambhala.Utils
+
+-- Add new contracts here, i.e.:
+--  Contracts.MyContract
+
+  other-modules:
+    Jambhala.CLI.Parsers
+    Jambhala.CLI.Update
+-- Sample contracts:
+    Contracts.Samples.Simple
+    Contracts.Samples.SimpleTyped
+    Contracts.Samples.CustomTyped
+    Contracts.Samples.Guess
+  hs-source-dirs:
+      src
+  build-depends:
+      aeson
+    , base16-bytestring
+    , bytestring
+    , cardano-api
+    , cardano-binary
+    , freer-extras
+    , lens
+    , plutus-contract
+    , plutus-core
+    , plutus-ledger
+    , plutus-ledger-api
+    , plutus-script-utils
+    , plutus-tx
+    , plutus-tx-constraints
+    , plutus-tx-plugin
+    , serialise
+    , text
+-- Jambhala dependencies:
+    , containers
+    , foldl
+    , megaparsec
+    , mtl
+    , optparse-applicative
+    , time
+    , turtle
+  mixins:
+      base hiding (Prelude)
+    , plutus-tx (PlutusTx.Prelude as Prelude)
+    , plutus-tx
+  default-extensions:
+    -- Allows promotion of types to "kinds", enabling more expressive type-level programming (required for all Plutus contracts):
+      DataKinds
+
+    -- A syntactic convenience for writing single-argument lambdas containing case expressions (used by Jambhala's utilities):
+    , LambdaCase
+
+    -- Allows construction of Text and other string-like values as string literals:
+    , OverloadedStrings
+
+    -- A syntactic convenience for working with record values (used by Jambhala's utilities):
+    , RecordWildCards
+
+    -- Required for all Plutus contracts to translate between Plutus and Haskell:
+    , TemplateHaskell
+
+executable jamb
+  import: common
+  main-is: Main.hs
+  hs-source-dirs:
+    app
+  ghc-options:
+    -Werror -threaded -rtsopts -with-rtsopts=-T
+  build-depends:
+    jambhala

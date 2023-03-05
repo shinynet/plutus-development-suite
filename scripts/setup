@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+set -e
+
+indent() {
+    sed 's/^/    /'
+}
+
+cat << "EOF"
+  ,____          (\=-,
+  \    `'-.______/ /
+  `-._.-"(       |
+          \ '--\ |
+            ^^   ^^
+     ▄█    ▄████████   ▄▄▄▄███▄▄▄▄   ▀█████████▄     ▄█    █▄       ▄████████  ▄█          ▄████████
+    ███   ███    ███ ▄██▀▀▀███▀▀▀██▄   ███    ███   ███    ███     ███    ███ ███         ███    ███
+    ███   ███    ███ ███   ███   ███   ███    ███   ███    ███     ███    ███ ███         ███    ███
+    ███   ███    ███ ███   ███   ███  ▄███▄▄▄██▀   ▄███▄▄▄▄███▄▄   ███    ███ ███         ███    ███
+    ███ ▀███████████ ███   ███   ███ ▀▀███▀▀▀██▄  ▀▀███▀▀▀▀███▀  ▀███████████ ███       ▀███████████
+    ███   ███    ███ ███   ███   ███   ███    ██▄   ███    ███     ███    ███ ███         ███    ███
+    ███   ███    ███ ███   ███   ███   ███    ███   ███    ███     ███    ███ ███▌    ▄   ███    ███
+█▄ ▄███   ███    █▀   ▀█   ███   █▀  ▄█████████▀    ███    █▀      ███    █▀  █████▄▄██   ███    █▀
+▀▀▀▀▀▀                                                                        ▀
+EOF
+
+echo "Welcome to Jambhala Setup Wizard..."
+
+PKGNAME_DEFAULT="$(basename "$(pwd)")"
+if [ "$PKGNAME_DEFAULT" = "jambhala" ]; then
+    PKGNAME_DEFAULT="jambhala"
+fi
+read -r -p "Project Name [$PKGNAME_DEFAULT]: " PKGNAME
+PKGNAME=${PKGNAME:-$PKGNAME_DEFAULT}
+
+AUTHNAME_DEFAULT=$(git config --default "Firstname Lastname" --get user.name)
+read -r -p "Project Author [$AUTHNAME_DEFAULT]: " AUTHNAME
+AUTHNAME=${AUTHNAME:-$AUTHNAME_DEFAULT}
+
+EMAIL_DEFAULT=$(git config --default "user@email.com" --get user.email)
+read -r -p "Maintainer Email [$EMAIL_DEFAULT]: " EMAIL
+EMAIL=${EMAIL:-$EMAIL_DEFAULT}
+
+echo "Preparing ${PKGNAME}.cabal..."
+(
+  set -x
+  git ls-files | xargs -I _ sed _ -i \
+      -e "s#jambhala#$PKGNAME#g" \
+      -e "s#Ian Burzynski#$AUTHNAME#g" \
+      -e "s#23251244+iburzynski@users.noreply.github.com#$EMAIL#g"
+  mv "jambhala.cabal" "$PKGNAME.cabal"
+) 2>&1 | indent
+
+echo "Creating README..."
+(
+  set -x
+  mv "README.md" "docs/README.md"
+  mv "README_TEMPLATE.md" "README.md"
+) 2>&1 | indent
+
+echo "Removing wizard..."
+(
+  set -x
+  rm "scripts/setup"
+) 2>&1 | indent
+
+echo "Committing changes..."
+(
+  set -x
+  git remote add template "https://github.com/iburzynski/jambhala"
+  git add -A
+  git commit -m "Set up project"
+) 2>&1 | indent
+
+echo "Building project..."
+(
+  set -x
+  nix build .
+  cabal update
+  cabal build "$PKGNAME"
+) 2>&1 | indent
+
+echo "Jambhala setup complete"
